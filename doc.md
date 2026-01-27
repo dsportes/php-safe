@@ -64,7 +64,7 @@ launch.json
             "-dxdebug.mode=debug",
             "-dxdebug.start_with_request=yes",
             "-S",
-            "localhost:0"
+            "localhost:8888"
           ],
           "program": "",
           "cwd": "${workspaceRoot}",
