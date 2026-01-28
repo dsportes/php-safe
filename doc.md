@@ -1,4 +1,13 @@
-### php.ini
+### Windows
+#### PHP web-server (pour phpMyAdmin)
+
+php -S localhost:8999 -t d:/phpWebServer
+
+#### phpMyAdmin
+
+http://localhost:8999/phpMyAdmin/index.php
+
+### php.ini sous Linux
 
 Localisé à deux endroits: /etc/php/8.3/
 - cli/php.ini
@@ -13,6 +22,8 @@ Localisé à deux endroits: /etc/php/8.3/
     sudo pecl install xdebug
 
 Dans php.ini
+
+    extension=mysqli
 
     extension=msgpack.so
 	

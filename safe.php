@@ -1,6 +1,7 @@
 <?php
 include 'ops.php';
 include 'exc.php';
+include 'db.php';
 
 // Gestion de CORS
 header("Access-Control-Allow-Origin: *");
@@ -14,14 +15,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 header('Content-Type: application/octet-stream');
 
-$uri = $_SERVER['REQUEST_URI'];
-$i = strpos($uri, '?');
-$opName = substr($uri, $i + 1);
-
-$input = file_get_contents("php://input"); // DOIT accepter CORS
-$args = msgpack_unpack($input);
-
 try {
+  $uri = $_SERVER['REQUEST_URI'];
+  $i = strpos($uri, '?');
+  $opName = substr($uri, $i + 1);
+
+  $mysqli = new mysqli('localhost', 'Daniel', 'Ds3542mysql', 'mysafe');                              
+  if (!$mysqli) throw new AppExc(2001, 'DB connexion failure', $opName, ['mysafe@localhost'], []);
+
+  $input = file_get_contents("php://input"); // DOIT accepter CORS
+  $args = msgpack_unpack($input);
+
+  $large = file_get_contents('./doc.md', FILE_USE_INCLUDE_PATH);
+
+  test2($mysqli, $large);
+  $xx = test3($mysqli);
   $result = null;
 
   switch ($opName) {
