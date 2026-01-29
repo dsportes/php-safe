@@ -33,7 +33,7 @@ try {
   $result = null;
 
   switch ($opName) {
-    case 'echo': 
+    case 'EchoText': 
       $result = op_echo($args); 
       break;
     default: 
