@@ -3,6 +3,11 @@ include 'ops.php';
 include 'exc.php';
 include 'db.php';
 
+$mysqli = null;
+$result = [];
+$opName = '';
+$args = 'toto';
+
 // Gestion de CORS
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -22,19 +27,18 @@ try {
 
   $mysqli = new mysqli('localhost', 'Daniel', 'Ds3542mysql', 'mysafe');                              
   if (!$mysqli) throw new AppExc(2001, 'DB connexion failure', $opName, ['mysafe@localhost'], []);
-
   $input = file_get_contents("php://input"); // DOIT accepter CORS
   $args = msgpack_unpack($input);
 
-  $large = file_get_contents('./doc.md', FILE_USE_INCLUDE_PATH);
-
-  test2($mysqli, $large);
-  $xx = test3($mysqli);
-  $result = null;
-
   switch ($opName) {
     case 'EchoText': 
-      $result = op_echo($args); 
+      op_echo();
+      break;
+    case '$Hash': 
+      op_hash(); 
+      break;
+    case '$Verify': 
+      op_verify(); 
       break;
     default: 
       throw new AppExc(1002, 'unknown operation', $opName, [$opName], []);
