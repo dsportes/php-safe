@@ -37,27 +37,76 @@ $pem = "-----BEGIN PUBLIC KEY-----
 BADIqIAsjtkLmevH+im9J6F4rr9leu5BsSzMI+/u+014YBDmQnAwZTjHYWqeEa+CnWuiuOTjcThq5/tY6k2FAf1ZQQB3P87Ssl/b5oQnpIDbXObPyqBI8e8/67/wcmH/m5TG5+TBj9LzGYERKY2NQpgNBIbK8qs4+CcLlm6D4iOfmeWbFg==
 -----END PUBLIC KEY-----";
 
+$private_key_pem = <<<EOTEOTEOT
+-----BEGIN PRIVATE KEY-----
+MIHuAgEAMBAGByqGSM49AgEGBSuBBAAjBIHWMIHTAgEBBEIBt4LJiBJO8/EMFweIC0andsLk3yUEWo9MsWmNzsqYaT2wCpY5pJBn/bgjIspE1y+QCsQvnXC2jIGznWk3TQeGBI2hgYkDgYYABABnwoEKLfrhXaDaOBtEVpG0AOOpTcfpr8o84rGBpMcGRwEVLv0LcKQUx1BiXNdcaDbSclmQbleJuvl/Yh4F/XiK8gHxWGrV4btVsVXLZkBOG4kPHKPwCHd98+jtHCljMcukGdLK6mffYnTI6HnNJdETcwzF/HsPGhTqQcYA5l6ziL2N9A==
+-----END PRIVATE KEY-----
+EOTEOTEOT;
+
+$public_key_pem = <<<EOTEOTEOT
+-----BEGIN PUBLIC KEY-----
+MIGbMBAGByqGSM49AgEGBSuBBAAjA4GGAAQAZ8KBCi364V2g2jgbRFaRtADjqU3H6a/KPOKxgaTHBkcBFS79C3CkFMdQYlzXXGg20nJZkG5Xibr5f2IeBf14ivIB8Vhq1eG7VbFVy2ZAThuJDxyj8Ah3ffPo7RwpYzHLpBnSyupn32J0yOh5zSXRE3MMxfx7DxoU6kHGAOZes4i9jfQ=
+-----END PUBLIC KEY-----
+EOTEOTEOT;
+
+$private_key_pem2 = <<<EOTEOTEOT
+-----BEGIN PRIVATE KEY-----
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgLDou4vs0NcCSQNrRiWaxvmKoUmrgmjJC/QoFkA6rxK2hRANCAARstqrEywVNMu2xZLJlVrbHVJesozTVzy4NZ+bQWbt2zYWOLqAbInUzoMKIRfFLWjFFiWTWfsrPD9IUpQ4aMUU3
+-----END PRIVATE KEY-----
+EOTEOTEOT;
+
+$public_key_pem2 = <<<EOTEOTEOT
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbLaqxMsFTTLtsWSyZVa2x1SXrKM01c8uDWfm0Fm7ds2Fji6gGyJ1M6DCiEXxS1oxRYlk1n7Kzw/SFKUOGjFFNw==
+-----END PUBLIC KEY-----
+EOTEOTEOT;
+
+/*
 $conf = [
   "private_key_type" => OPENSSL_KEYTYPE_EC,
-  "curve_name"       => "secp521r1",   // P‑521
+  "curve_name"       => "secp521r1",   // secp256k1
 ];
-$privKey = json_decode($jwk);
-// $privKey = openssl_pkey_new($conf);
-// $pubKey  = openssl_pkey_get_details($privKey)['key'];
-$pubKey = $pem;
+$privKey = openssl_pkey_new($conf);
+$pubKey  = openssl_pkey_get_details($privKey)['key'];
+// $pubKey = $pem;
+*/
 
-$message   = "Texte à signer";
+/*
+// Select a standard curve, P-256 is widely compatible
+$curve_name = 'secp521r1'; // 'secp256k1';
+
+// Create a new EC key resource
+$private_key_resource = openssl_pkey_new([
+    'curve_name' => $curve_name,
+    'private_key_type' => OPENSSL_KEYTYPE_EC,
+]);
+
+// Export the private key in PEM format
+openssl_pkey_export($private_key_resource, $private_key_pem);
+
+// Retrieve and format the public key
+$public_key_details = openssl_pkey_get_details($private_key_resource);
+$public_key_pem = $public_key_details['key'];
+
+echo "Private Key (PEM):\n" . $private_key_pem . "\n\n";
+echo "Public Key (PEM):\n" . $public_key_pem . "\n";
+*/
+
+$message   = 'toto est tres tres beau';
 $signature = '';
-openssl_sign($message, $signature, $privKey, OPENSSL_ALGO_SHA256);
+$private_key_resource = openssl_pkey_get_private($private_key_pem2);
+openssl_sign($message, $signature, $private_key_resource, OPENSSL_ALGO_SHA256);
 $signatureBase64 = base64_encode($signature);
+echo $signatureBase64;
 
-$publicKeyResource = openssl_pkey_get_public($pubKey);
+// $publicKeyResource = openssl_pkey_get_public($pubKey);
+$public_key_resource = openssl_pkey_get_public($public_key_pem2);
 $signatureBinary   = base64_decode($signatureBase64);
 
 $isValid = openssl_verify(
     $message,
     $signatureBinary,
-    $publicKeyResource,
+    $public_key_resource,
     OPENSSL_ALGO_SHA256
 );
 
@@ -68,6 +117,6 @@ if ($isValid === 1) {
 } else {
     echo "Erreur de vérification : " . openssl_error_string();
 }
-openssl_free_key($publicKeyResource);
-
+openssl_free_key($private_key_resource);
+openssl_free_key($public_key_resource);
 ?>

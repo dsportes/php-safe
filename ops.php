@@ -18,13 +18,11 @@ function op_hash() {
 
 function op_verify () {
   global $result, $args;
-  // $b = "-----BEGIN PUBLIC KEY-----\n";
-  // $e = "\n-----END PUBLIC KEY-----";
-  $pub = $args['appSVPub'];
   $x = $args['x'];
   $sign = $args['sign'];
-  // $pk = $b . base64_encode($pub) . $e;
-  $isValid = openssl_verify($x, $sign, $pub, OPENSSL_ALGO_SHA256);
+  $pubPem = $args['pubPem'];
+
+  $isValid = openssl_verify($x, $sign, $pubPem, OPENSSL_ALGO_SHA256);
   $result['status'] = $isValid;
 }
 
