@@ -31,15 +31,22 @@ try {
   $args = msgpack_unpack($input);
 
   switch ($opName) {
-    case 'EchoText': 
-      op_echo();
-      break;
-    case '$Hash': 
-      op_hash(); 
-      break;
-    case '$Verify': 
-      op_verify(); 
-      break;
+    case 'EchoText': op_echo(); break;
+    case '$Verify': op_verify(); break;
+    case '$CreateSafe': op_createSafe(); break;
+    case '$RestoreSafe': op_restoreSafe(); break;
+    case '$GetBinSafe': op_getBinSafe(); break;
+    case '$UpdCodesSafe': op_updCodesSafe(); break;
+    case '$OpenSafeByPR': op_openSafeByPR(); break;
+    case '$OpenSafeById': op_openSafeById(); break;
+    case '$OpenSafeByPin': op_openSafeByPin(); break;
+    case '$TrustDevice': op_trustDevice(); break;
+    case '$UntrustDevice': op_untrustDevice(); break;
+    case '$SetAboutProfile': op_setAboutProfile(); break;
+    case '$UpdateCreds': op_updateCreds(); break;
+    case '$TransmitCred': op_transmitCred(); break;
+    case '$StatusSafe': op_statusSafe(); break;
+    case '$GetPublicKeys': op_getPublicKeys(); break;
     default: 
       throw new AppExc(1002, 'unknown operation', $opName, [$opName], []);
   }
