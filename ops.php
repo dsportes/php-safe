@@ -291,7 +291,7 @@ function op_getPublicKeys () {
   $x = getSafe($args['userId']);
   $m = $x['m'];
   $safe = $x['safe'];
-  $result['crypt'] = isset($safe) $safe['C'] : null; 
-  $result['verify'] = isset($safe) $safe['V'] : null; 
+  $result['crypt'] = isset($safe) ? $safe['C'] : null; 
+  $result['verify'] = isset($safe) ? $safe['V'] : null; 
 }
 ?>
