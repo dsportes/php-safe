@@ -4,7 +4,10 @@ include 'exc.php';
 include 'db.php';
 
 $mysqli = null;
-$result = [];
+$result = [
+  'status' => 0,
+  'safe' => null
+];
 $opName = '';
 $args = 'toto';
 

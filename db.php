@@ -5,6 +5,7 @@ function currentMonth () {
 }
 
 function test1 ($mysqli, $data) {
+  global $mysqli;
   $stmt = $mysqli->prepare("INSERT INTO safe(id, hp0, hr0, lam, data) VALUES (?, ?, ?, ?, ?)");
   $id = 'toto';
   $hp0 = 'titi';
@@ -27,7 +28,9 @@ function chunks ($stmt, $data, $idx) {
   }
 }
 
-function test2 ($mysqli, $bin) {
+/*
+function test2 ($bin) {
+  global $mysqli;
   $mysqli->autocommit(FALSE);
   $stmt = $mysqli->prepare("UPDATE safe  SET data = ?, lam = ? WHERE id = ?");
   $id = 'toto';
@@ -38,7 +41,8 @@ function test2 ($mysqli, $bin) {
   $mysqli->commit();
 }
 
-function test3 ($mysqli) {
+function test3 () {
+  global $mysqli;
   $stmt = $mysqli->prepare("SELECT data FROM safe WHERE id = ?");
   $id = 'toto';
   $stmt->bind_param('s', $id); 
@@ -47,11 +51,13 @@ function test3 ($mysqli) {
   $row = $result->fetch_assoc();
   return $row['data'];
 }
+*/
 
 /* Retourne l'objet safe depuis soit son id, soit son p0, soit son r0
 null si non trouvé
 */
 function getBinSafe ($id) {
+  global $mysqli;
   $m = 0;
   $stmt = $mysqli->prepare('SELECT id, lam, data FROM SAFE WHERE id = ?');
   $stmt->bind_param('s', $id); 
@@ -82,12 +88,12 @@ function getBinSafe ($id) {
     $stmt->bind_param('is', $cm, $id); 
     $stmt->execute();
   }
-  return [m, $row->data];
+  return [$m, $row['data']];
 }
 
 function getSafe ($id) {
   $ret = getBinSafe($id);
-  return [$ret['m'], $ret['bin'] ? msgpack_unpack($ret['bin']) : null];
+  return [ 'm' => $ret[0], 'safe' => ($ret[1] ? msgpack_unpack($ret[1]) : null)];
 }
 
 /* Status de création d'un safe - Permet de savoir dans quelles conditions le safe pourrait être "recréé".
@@ -99,6 +105,7 @@ hp0 comme clé p0
 - xr : idem pour hr0
 */
 function statusSafe ($id, $hp0, $hr0) {
+  global $mysqli;
   $r = [ 'lm' => -1, 'xp' => true, 'xr' => true ];
   $stmt = $mysqli->prepare('SELECT id, data FROM SAFE WHERE id = ?');
   $stmt->bind_param('s', $id); 
@@ -141,9 +148,10 @@ function statusSafe ($id, $hp0, $hr0) {
 }
 
 function newSafe ($safe) {
+  global $mysqli;
   $id = $safe['id'];
   $hp0 = $safe['hp0'];
-  $hr0 = $safe('hr0');
+  $hr0 = $safe['hr0'];
   $safe['lm'] = time();
   $lam = currentMonth();
   $stmt = $mysqli->prepare('SELECT id, hp0, hr0 FROM SAFE WHERE id = ?');
@@ -168,7 +176,7 @@ function newSafe ($safe) {
     if (isset($row2)) return 2;
   }
   $data = msgpack_pack($safe);
-  if (isset($row0)) {
+  if (!isset($row0)) {
     $stmt = $mysqli->prepare('INSERT INTO SAFE (id, hp0, hr0, lam, data) VALUES (?, ?, ?, ?, ?)');
     $stmt->bind_param('sssib', $id, $hp0, $hr0, $lam, $null);
     chunks($stmt, $data, 4);
@@ -183,6 +191,7 @@ function newSafe ($safe) {
 }
 
 function restoreSafe ($safe) {
+  global $mysqli;
   $id = $safe['id'];
   $hp0 = $safe['hp0'];
   $hr0 = $safe('hr0');
@@ -221,6 +230,7 @@ function restoreSafe ($safe) {
 }
 
 function updPRSafe ($safe) {
+  global $mysqli;
   $id = $safe['id'];
   $hp0 = $safe['hp0'];
   $hr0 = $safe('hr0');
@@ -247,6 +257,7 @@ function updPRSafe ($safe) {
 }
 
 function updSafe ($safe) {
+  global $mysqli;
   $id = $safe['id'];
   $safe['lm'] = time();
   $lam = currentMonth();
@@ -258,12 +269,14 @@ function updSafe ($safe) {
 }
 
 function delSafe ($id) {
+  global $mysqli;
   $stmt = $mysqli->prepare('DELETE FROM SAFE WHERE id = ?');
   $stmt->bind_param('s', $id);
   $stmt->execute();
 }
 
 function purgeSafes ($lam) {
+  global $mysqli;
   $stmt = $mysqli->prepare('DELETE FROM SAFE WHERE lam < ?');
   $stmt->bind_param('s', $lam);
   $stmt->execute();
