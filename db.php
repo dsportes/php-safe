@@ -72,13 +72,14 @@ function getBinSafe ($id) {
     $result = $stmt->get_result();
     $row = $result->fetch_assoc();
     if (!isset($row)) {
+      $m = 2;
       $stmt = $mysqli->prepare('SELECT id, lam, data FROM SAFE WHERE hr0 = ?');
       $stmt->bind_param('s', $id); 
       $stmt->execute();
       $result = $stmt->get_result();
       $row = $result->fetch_assoc();
       if (!isset($row)) {
-        return [m, null];
+        return [$m, null];
       }
     }
   }
@@ -251,7 +252,7 @@ function updPRSafe ($safe) {
   $data = msgpack_pack($safe);
   $stmt = $mysqli->prepare('UPDATE SAFE SET hp0 = ?, hr0 = ?, lam = ?, data = ? WHERE id = ?');
   $stmt->bind_param('ssibs', $hp0, $hr0, $lam, $null, $id);
-  chunks($stmt, $data, 3);
+  chunks($stmt, $safe, 3);
   $stmt->execute();
   return 0;
 }
@@ -262,9 +263,9 @@ function updSafe ($safe) {
   $safe['lm'] = time();
   $lam = currentMonth();
   $data = msgpack_pack($safe);
-  $stmt = $mysqli->prepare('UPDATE SAFE SET hp0 = ?, hr0 = ?, lam = ?, data = ? WHERE id = ?');
-  $stmt->bind_param('ssibs', $hp0, $hr0, $lam, $null, $id);
-  chunks($stmt, $data, 3);
+  $stmt = $mysqli->prepare('UPDATE SAFE SET lam = ?, data = ? WHERE id = ?');
+  $stmt->bind_param('ibs', $lam, $null, $id);
+  chunks($stmt, $data, 1);
   $stmt->execute();
 }
 

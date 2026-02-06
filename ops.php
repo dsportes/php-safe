@@ -3,8 +3,14 @@ function u8ToB64 ($data) {
   return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
-function b64ToU8 ($data) {
-  return base64_decode($data);
+function b64ToU8 ($b64) {
+  if (!$b64) return null;
+  $diff = strlen($b64) % 4;
+  $x = $b64;
+  if ($diff !== 0) 
+    $x = $b64 . substr('====', 0, 4 - $diff);
+  $y = str_replace('-', '+', str_replace('_', '/', $x));
+  return base64_decode($y);
 }
 
 function shaS($bin) {
@@ -37,7 +43,7 @@ function opGetSafe ($arg) {
     return null;
   }
 
-  if (arg['shk'] && $safe['hhk'] === shaS(b64ToU8(arg['shk'])))
+  if ($arg['shk'] && $safe['hhk'] === shaS(b64ToU8(arg['shk'])))
     return $safe;
 
   $ok = false;
@@ -111,15 +117,28 @@ function op_updCodesSafe () {
 function op_openSafeByPR () {
   global $result, $args;
   $byP = false;
-  $status = 1;
+  $status = 0;
   $s0 = $args['sh0'];
   $x = getSafe($s0);
   $m = $x['m'];
   $safe = $x['safe'];
-  $hhp1 = shaS(b64ToU8($args['sh1']));
-  if ($safe && $safe['hhp1'] === $hhp1) {
-    $byP = $m === 1;
-    $status = 0;
+  if (!$safe) {
+    $status = 3;
+    $safe = null;
+    $byP = false;
+  } else {
+    $hh1 = shaS(b64ToU8($args['sh1']));
+    if ($m === 1 && $safe['hhp1'] === $hh1) {
+      $byP = true;
+      $status = 0;
+    } else if ($m === 2 && $safe['hhr1'] === $hh1) {
+      $byP = false;
+      $status = 0;
+    } else {
+      $status = 3;
+      $safe = null;
+      $byP = false;
+    }
   }
   $result['status'] = $status;
   $result['safe'] = $safe;
@@ -155,7 +174,7 @@ function op_openSafeByPin () {
     $result['status'] = 2;
     return;
   }
-  if (!isset(safe['devices'])) $safe['devices'] = [];
+  if (!isset($safe['devices'])) $safe['devices'] = [];
   $dev = $safe['devices'][$devId];
   if (!isset($dev)) {
     $result['status'] = 2;
@@ -204,7 +223,7 @@ function op_trustDevice () {
   $result['safe'] = $safe;
 }
 
-function op_untrustDevice () {
+function op_untrustDevices () {
   global $result, $args;
   $td = $args['trustDev'];
   $safe = opGetSafe($td);

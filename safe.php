@@ -44,7 +44,7 @@ try {
     case '$OpenSafeById': op_openSafeById(); break;
     case '$OpenSafeByPin': op_openSafeByPin(); break;
     case '$TrustDevice': op_trustDevice(); break;
-    case '$UntrustDevice': op_untrustDevice(); break;
+    case '$UntrustDevices': op_untrustDevices(); break;
     case '$SetAboutProfile': op_setAboutProfile(); break;
     case '$UpdateCreds': op_updateCreds(); break;
     case '$TransmitCred': op_transmitCred(); break;
