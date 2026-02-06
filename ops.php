@@ -1,17 +1,20 @@
 <?php
-
-function op_echo() {
-  global $mysqli, $result, $opName, $args;
-  $result['echo'] = $args;
+function u8ToB64 ($data) {
+  return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
-function u8ToB64($data) {
-  return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+function b64ToU8 ($data) {
+  return base64_decode($data);
 }
 
 function shaS($bin) {
   $h = hash('sha256', $bin, true);
   return u8ToB64(substr($h, 3, 15));
+}
+
+function op_shaS() {
+  global $mysqli, $result, $opName, $args;
+  $result['shaS'] = shaS(b64ToU8($args['input']));
 }
 
 function op_verify () {
@@ -34,12 +37,12 @@ function opGetSafe ($arg) {
     return null;
   }
 
-  if (arg['shk'] && $safe['hhk'] === shaS(arg['shk']))
+  if (arg['shk'] && $safe['hhk'] === shaS(b64ToU8(arg['shk'])))
     return $safe;
 
   $ok = false;
-  $sh1p = $arg['sh1p'];
-  $sh1r = $arg['sh1r'];
+  $sh1p = b64ToU8($arg['sh1p']);
+  $sh1r = b64ToU8($arg['sh1r']);
   if ($sh1p && $safe['hhp1'] === shaS($sh1p)) $ok = true;
   else if ($sh1r && $safe['hhr1'] === shaS($sh1r)) $ok = true;
   if ($ok) return $safe;
@@ -70,7 +73,7 @@ function op_getBinSafe () {
   $x = getBinSafe($args['userId']);
   $m = $x[0];
   $bin = $x[1];
-  $hhk = shaS($args['shk']);
+  $hhk = shaS(b64ToU8($args['shk']));
   $safe = msgpack_unpack($bin);
   if (isset($safe) && $hhk === $safe['hhk']) {
     $result['status'] = 0;
@@ -109,11 +112,11 @@ function op_openSafeByPR () {
   global $result, $args;
   $byP = false;
   $status = 1;
-  $s0 = u8ToB64($args['sh0'], true);
+  $s0 = $args['sh0'];
   $x = getSafe($s0);
   $m = $x['m'];
   $safe = $x['safe'];
-  $hhp1 = shaS($args['sh1']);
+  $hhp1 = shaS(b64ToU8($args['sh1']));
   if ($safe && $safe['hhp1'] === $hhp1) {
     $byP = $m === 1;
     $status = 0;
@@ -129,7 +132,7 @@ function op_openSafeById () {
   $x = getSafe($args['userId']);
   $m = $x['m'];
   $safe = $x['safe'];
-  $hhk = shaS($args['shk']);
+  $hhk = shaS(b64ToU8($args['shk']));
   if ($safe && $hhk === $safe['hhk']) {
     $result['status'] = 0;
     $result['safe'] = $safe;
@@ -152,6 +155,7 @@ function op_openSafeByPin () {
     $result['status'] = 2;
     return;
   }
+  if (!isset(safe['devices'])) $safe['devices'] = [];
   $dev = $safe['devices'][$devId];
   if (!isset($dev)) {
     $result['status'] = 2;
@@ -160,13 +164,15 @@ function op_openSafeByPin () {
 
   // vérifie par `Va` que `sign` est bien la signature de 'pincx'
   // la signature est censée être en ASN1
-  $isValid = openssl_verify($pincx, $dev['sign'], $dev['Va'], OPENSSL_ALGO_SHA256);
+  $sign = b64ToU8($dev['sign']);
+  $isValid = openssl_verify(b64ToU8($pincx), $sign, $dev['Va'], OPENSSL_ALGO_SHA256);
   if ($isValid !== 1) {
     $dev['nbe']++;
     if ($dev['nbe'] > 2) {
       unset($safe['devices'][$devId]);
       $result['status'] = 5;
     } else $result['status'] = 4;
+    if (count($safe['devices']) === 0) unset($safe['devices']);
     updSafe($safe);
     return;  
   }
@@ -191,6 +197,7 @@ function op_trustDevice () {
     'sign' => $td['sign'],
     'nbe' => 0
   ];
+  if (!isset($safe['devices'])) $safe['devices'] = [];
   $safe['devices'][$td['devId']] = $d;
   updSafe($safe);
   $result['status'] = 0;
@@ -203,9 +210,12 @@ function op_untrustDevice () {
   $safe = opGetSafe($td);
   if (!isset($safe)) return;
   
-  foreach ($td['devIds'] as $id) unset($safe['devices'][$id]);
-
-  updSafe($safe);
+  if (isset($safe['devices'])) {
+    foreach ($td['devIds'] as $id)
+      unset($safe['devices'][$id]);
+    if (count($safe['devices']) === 0) unset($safe['devices']);
+    updSafe($safe);
+  }
   $result['status'] = 0;
   $result['safe'] = $safe;
 }
@@ -216,6 +226,7 @@ function op_setAboutProfile () {
   $safe = opGetSafe($ab);
   if (!isset($safe)) return;
   
+  if (!isset($safe['profiles'])) $safe['profiles'] = [];
   $appe = $safe['profiles'][$ab['app']];
   if (!isset($appe)) { 
     $appe = []; 
@@ -235,10 +246,13 @@ function op_setAboutProfile () {
 
 function op_updateCreds () {
   global $result, $args;
-  $tc = $args['updateCreds'];
+  $uc = $args['updateCreds'];
   $safe = opGetSafe($uc);
   if (!isset($safe)) return;
   
+  if (!isset($safe['profiles'])) $safe['profiles'] = [];
+  if (!isset($safe['creds'])) $safe['creds'] = [];
+
   $appp = $safe['profiles'][$uc['app']];
   if (!isset($appp)) { 
     $appp = []; 
@@ -248,6 +262,24 @@ function op_updateCreds () {
     $appp[$profId] = $uc['profiles'][$profId];
   foreach ($uc['delprofs'] as $profId) 
     unset($uc['profiles'][$profId]);
+  if (count($safe['profiles'][$uc['app']]) === 0)
+    unset($safe['profiles'][$uc['app']]);
+  if (count($safe['profiles']) === 0)
+    unset($safe['profiles']);
+
+  $appc = $safe['creds'][$uc['app']];
+  if (!isset($appc)) { 
+    $appc = []; 
+    $safe['creds'][$uc['app']] = $appc;
+  }
+  foreach ($uc['creds'] as $credId) 
+    $appc[$credId] = $uc['creds'][$credId];
+  foreach ($uc['delcreds'] as $credId) 
+    unset($uc['creds'][$credId]);
+  if (count($safe['creds'][$uc['app']]) === 0)
+    unset($safe['creds'][$uc['app']]);
+  if (count($safe['creds']) === 0)
+    unset($safe['creds']);
 
   updSafe($safe);
   $result['status'] = 0;
@@ -257,7 +289,7 @@ function op_updateCreds () {
 function op_transmitCred () {
   global $result, $args;
   $tc = $args['transmitCred'];
-  $x = getSafe($args['userId']);
+  $x = getSafe($tc['targetId']);
   $m = $x['m'];
   $safe = $x['safe'];
 
@@ -266,12 +298,19 @@ function op_transmitCred () {
     return;
   }
 
+  if (!isset($safe['creds'])) $safe['creds'] = [];
+
   $appc = $safe['creds'][$tc['app']];
   if (!isset($appc)) { 
     $appc = []; 
     $safe['creds'][$tc['app']] = $appc;
   }
-  $appc['$' + $tc['credId']] = msgpack_pack([$tc['cryptedCred'], $tc['pubC']]);
+  $appc['$' + $tc['credId']] = $tc['crpub'];
+  if (count($safe['creds'][$tc['app']]) === 0)
+    unset($safe['creds'][$tc['app']]);
+  if (count($safe['creds']) === 0)
+    unset($safe['creds']);
+
   updSafe($safe);
   $result['status'] = 0;
 }
@@ -288,7 +327,7 @@ function op_statusSafe () {
 function op_getPublicKeys () {
   global $result, $args;
   $id = $args['id'];
-  $x = getSafe($args['userId']);
+  $x = getSafe($id);
   $m = $x['m'];
   $safe = $x['safe'];
   $result['crypt'] = isset($safe) ? $safe['C'] : null; 

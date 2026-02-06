@@ -34,7 +34,7 @@ try {
   $args = msgpack_unpack($input);
 
   switch ($opName) {
-    case 'EchoText': op_echo(); break;
+    case '$Shas': op_shaS(); break;
     case '$Verify': op_verify(); break;
     case '$CreateSafe': op_createSafe(); break;
     case '$RestoreSafe': op_restoreSafe(); break;
