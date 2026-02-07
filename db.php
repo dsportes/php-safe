@@ -112,8 +112,8 @@ function statusSafe ($id, $hp0, $hr0) {
   $stmt->bind_param('s', $id); 
   $stmt->execute();
   $result = $stmt->get_result();
-  if (isset($result)) {
-    $row = $result->fetch_assoc();
+  $row = $result->fetch_assoc();
+  if (isset($row)) {
     $data = msgpack_unpack($row['data']);
     $r['lm'] = isset($data['lm']) ? $data['lm'] : 0;
     if ($data['hp0'] === $hp0) $r['xp'] = true;
@@ -122,7 +122,8 @@ function statusSafe ($id, $hp0, $hr0) {
       $stmt2->bind_param('s', $hp0); 
       $stmt2->execute();
       $result2 = $stmt2->get_result();
-      $r['xp'] = !isset($result2);
+      $row2 = $result2->fetch_assoc();
+      $r['xp'] = !isset($row2);
     }
     if ($data['hr0'] === $hr0) $r['xr'] = true;
     else {
@@ -130,7 +131,8 @@ function statusSafe ($id, $hp0, $hr0) {
       $stmt3->bind_param('s', $hr0); 
       $stmt3->execute();
       $result3 = $stmt3->get_result();
-      $r['xr'] = !isset($result3);
+      $row2 = $result3->fetch_assoc();
+      $r['xr'] = !isset($row3);
     }
   } else {
     $r['lm'] = -1;
@@ -138,12 +140,14 @@ function statusSafe ($id, $hp0, $hr0) {
     $stmt2->bind_param('s', $hp0); 
     $stmt2->execute();
     $result2 = $stmt2->get_result();
-    $r['xp'] = !isset($result2);
+    $row2 = $result2->fetch_assoc();
+    $r['xp'] = !isset($row2);
     $stmt3 = $mysqli->prepare('SELECT id FROM SAFE WHERE hr0 = ?');
     $stmt3->bind_param('s', $hr0); 
     $stmt3->execute();
     $result3 = $stmt3->get_result();
-    $r['xr'] = !isset($result3);
+    $row3 = $result3->fetch_assoc();
+    $r['xr'] = !isset($row3);
   }
   return $r;
 }
@@ -195,7 +199,7 @@ function restoreSafe ($safe) {
   global $mysqli;
   $id = $safe['id'];
   $hp0 = $safe['hp0'];
-  $hr0 = $safe('hr0');
+  $hr0 = $safe['hr0'];
   $safe['lm'] = time();
   $lam = currentMonth();
   $stmt = $mysqli->prepare('SELECT id, hp0, hr0 FROM SAFE WHERE id = ?');
@@ -216,7 +220,7 @@ function restoreSafe ($safe) {
   $row2 = isset($result) ? $result->fetch_assoc() : null;
   if (isset($row2) && $row2['id'] !== $id) return 2;
   $data = msgpack_pack($safe);
-  if (isset($row0)) {
+  if (!isset($row0)) {
     $stmt = $mysqli->prepare('INSERT INTO SAFE (id, hp0, hr0, lam, data) VALUES (?, ?, ?, ?, ?)');
     $stmt->bind_param('sssib', $id, $hp0, $hr0, $lam, $null);
     chunks($stmt, $data, 4);

@@ -50,6 +50,7 @@ try {
     case '$TransmitCred': op_transmitCred(); break;
     case '$StatusSafe': op_statusSafe(); break;
     case '$GetPublicKeys': op_getPublicKeys(); break;
+    case '$DelSafe': op_delSafe(); break;
     default: 
       throw new AppExc(1002, 'unknown operation', $opName, [$opName], []);
   }

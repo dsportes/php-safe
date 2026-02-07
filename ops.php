@@ -34,16 +34,17 @@ function op_verify () {
 }
 
 function opGetSafe ($arg) {
+  global $result;
   $x = getSafe($arg['userId']);
   $m = $x['m'];
   $safe = $x['safe'];
   if (!isset($safe)) {
-    $reseult['status'] = 1;
+    $result['status'] = 1;
     sleep(3);
     return null;
   }
-
-  if ($arg['shk'] && $safe['hhk'] === shaS(b64ToU8(arg['shk'])))
+  $hhk = shaS(b64ToU8($arg['shk']));
+  if ($arg['shk'] && $safe['hhk'] === $hhk)
     return $safe;
 
   $ok = false;
@@ -83,7 +84,7 @@ function op_getBinSafe () {
   $safe = msgpack_unpack($bin);
   if (isset($safe) && $hhk === $safe['hhk']) {
     $result['status'] = 0;
-    $result['binsafe'] = $bin;
+    $result['safe'] = $safe;
   } else {
     $result['status'] = 1;
     sleep(3);
@@ -225,7 +226,7 @@ function op_trustDevice () {
 
 function op_untrustDevices () {
   global $result, $args;
-  $td = $args['trustDev'];
+  $td = $args['untrustDev'];
   $safe = opGetSafe($td);
   if (!isset($safe)) return;
   
@@ -245,20 +246,15 @@ function op_setAboutProfile () {
   $safe = opGetSafe($ab);
   if (!isset($safe)) return;
   
-  if (!isset($safe['profiles'])) $safe['profiles'] = [];
-  $appe = $safe['profiles'][$ab['app']];
-  if (!isset($appe)) { 
-    $appe = []; 
-    $safe['profiles'][$ab['app']] = $appe;
+  if (isset($safe['profiles']) 
+    && isset($safe['profiles'][$ab['app']])
+    && isset($safe['profiles'][$ab['app']][$ab['profId']])) {
+    $prf = msgpack_unpack(b64ToU8($safe['profiles'][$ab['app']][$ab['profId']]));
+    $prf['about'] = $ab['about'];
+    $prf2 = u8ToB64(msgpack_pack($prf));
+    $safe['profiles'][$ab['app']][$ab['profId']] = $prf2;
+    updSafe($safe);
   }
-
-  $prf = $appe[$ab['profId']];
-  if (!isset($prf)) { 
-    $prf = [ 'creds' => [] ]; 
-    $appe[$ab['profId']] = $prf ;
-  }
-  $prf['about'] = $ab['about'];
-  updSafe($safe);
   $result['status'] = 0;
   $result['safe'] = $safe;
 }
@@ -272,29 +268,23 @@ function op_updateCreds () {
   if (!isset($safe['profiles'])) $safe['profiles'] = [];
   if (!isset($safe['creds'])) $safe['creds'] = [];
 
-  $appp = $safe['profiles'][$uc['app']];
-  if (!isset($appp)) { 
-    $appp = []; 
-    $safe['profiles'][$uc['app']] = $appp;
-  }
-  foreach ($uc['profiles'] as $profId) 
-    $appp[$profId] = $uc['profiles'][$profId];
+  if (!isset($safe['profiles'][$uc['app']])) 
+    $safe['profiles'][$uc['app']] = [];
+  foreach ($uc['profiles'] as $profId => $value) 
+    $safe['profiles'][$uc['app']][$profId] = $value;
   foreach ($uc['delprofs'] as $profId) 
-    unset($uc['profiles'][$profId]);
+    unset($safe['profiles'][$uc['app']][$profId]);
   if (count($safe['profiles'][$uc['app']]) === 0)
     unset($safe['profiles'][$uc['app']]);
   if (count($safe['profiles']) === 0)
     unset($safe['profiles']);
 
-  $appc = $safe['creds'][$uc['app']];
-  if (!isset($appc)) { 
-    $appc = []; 
-    $safe['creds'][$uc['app']] = $appc;
-  }
-  foreach ($uc['creds'] as $credId) 
-    $appc[$credId] = $uc['creds'][$credId];
+  if (!isset($safe['creds'][$uc['app']]))
+    $safe['creds'][$uc['app']] = [];
+  foreach ($uc['creds'] as $credId => $value) 
+    $safe['creds'][$uc['app']][$credId] = $value;
   foreach ($uc['delcreds'] as $credId) 
-    unset($uc['creds'][$credId]);
+    unset($safe['creds'][$uc['app']][$credId]);
   if (count($safe['creds'][$uc['app']]) === 0)
     unset($safe['creds'][$uc['app']]);
   if (count($safe['creds']) === 0)
@@ -318,13 +308,10 @@ function op_transmitCred () {
   }
 
   if (!isset($safe['creds'])) $safe['creds'] = [];
-
-  $appc = $safe['creds'][$tc['app']];
-  if (!isset($appc)) { 
-    $appc = []; 
-    $safe['creds'][$tc['app']] = $appc;
-  }
-  $appc['$' + $tc['credId']] = $tc['crpub'];
+  if (!isset($safe['creds'][$tc['app']])) 
+    $safe['creds'][$tc['app']] = [];
+  $ix = '$' . $tc['credId'];
+  $safe['creds'][$tc['app']][$ix] = $tc['crpub'];
   if (count($safe['creds'][$tc['app']]) === 0)
     unset($safe['creds'][$tc['app']]);
   if (count($safe['creds']) === 0)
@@ -352,4 +339,14 @@ function op_getPublicKeys () {
   $result['crypt'] = isset($safe) ? $safe['C'] : null; 
   $result['verify'] = isset($safe) ? $safe['V'] : null; 
 }
+
+function op_delSafe () {
+  global $result, $args;
+  $userId = $args['userId'];
+  $safe = opGetSafe($args);
+  if (!isset($safe)) return;
+  delSafe($userId);
+  $result['status'] = 0;
+}
+
 ?>
