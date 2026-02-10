@@ -295,6 +295,30 @@ function op_updateCreds () {
   if (!isset($uc['nosafe'])) $result['safe'] = $safe;
 }
 
+function op_updatePrefs () {
+  global $result, $args;
+  $up = $args['updatePrefs'];
+  $safe = opGetSafe($up);
+  if (!isset($safe)) return;
+  
+  if (!isset($safe['prefs'])) $safe['prefs'] = [];
+
+  if (!isset($safe['prefs'][$up['app']])) 
+    $safe['prefs'][$up['app']] = [];
+  foreach ($up['prefs'] as $code => $value) 
+    $safe['prefs'][$up['app']][$code] = $value;
+  foreach ($up['delprefs'] as $code) 
+    unset($safe['prefs'][$up['app']][$code]);
+  if (count($safe['prefs'][$up['app']]) === 0)
+    unset($safe['prefs'][$up['app']]);
+  if (count($safe['prefs']) === 0)
+    unset($safe['prefs']);
+
+  updSafe($safe);
+  $result['status'] = 0;
+  if (!isset($uc['nosafe'])) $result['safe'] = $safe;
+}
+
 function op_transmitCred () {
   global $result, $args;
   $tc = $args['transmitCred'];

@@ -47,6 +47,7 @@ try {
     case '$UntrustDevices': op_untrustDevices(); break;
     case '$SetAboutProfile': op_setAboutProfile(); break;
     case '$UpdateCreds': op_updateCreds(); break;
+    case '$UpdatePrefs': op_updatePrefs(); break;
     case '$TransmitCred': op_transmitCred(); break;
     case '$StatusSafe': op_statusSafe(); break;
     case '$GetPublicKeys': op_getPublicKeys(); break;
