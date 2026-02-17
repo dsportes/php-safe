@@ -279,14 +279,10 @@ function op_updateCreds () {
   if (count($safe['profiles']) === 0)
     unset($safe['profiles']);
 
-  if (!isset($safe['creds'][$uc['app']]))
-    $safe['creds'][$uc['app']] = [];
-  foreach ($uc['creds'] as $credId => $value) 
-    $safe['creds'][$uc['app']][$credId] = $value;
-  foreach ($uc['delcreds'] as $credId) 
-    unset($safe['creds'][$uc['app']][$credId]);
-  if (count($safe['creds'][$uc['app']]) === 0)
-    unset($safe['creds'][$uc['app']]);
+  foreach ($uc['creds'] as $xid => $value) 
+    $safe['creds'][$xid] = $value;
+  foreach ($uc['delcreds'] as $xid) 
+    unset($safe['creds'][$xid]);
   if (count($safe['creds']) === 0)
     unset($safe['creds']);
 
@@ -332,12 +328,8 @@ function op_transmitCred () {
   }
 
   if (!isset($safe['creds'])) $safe['creds'] = [];
-  if (!isset($safe['creds'][$tc['app']])) 
-    $safe['creds'][$tc['app']] = [];
-  $ix = '$' . $tc['credId'];
-  $safe['creds'][$tc['app']][$ix] = $tc['crpub'];
-  if (count($safe['creds'][$tc['app']]) === 0)
-    unset($safe['creds'][$tc['app']]);
+  $ix = '$' . $tc['credXid'];
+  $safe['creds'][$ix] = $tc['crpub'];
   if (count($safe['creds']) === 0)
     unset($safe['creds']);
 
