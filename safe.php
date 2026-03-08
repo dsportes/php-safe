@@ -34,6 +34,7 @@ try {
   $args = msgpack_unpack($input);
 
   switch ($opName) {
+    case '$Ping': $result['ping'] = true; break;
     case '$Shas': op_shaS(); break;
     case '$Verify': op_verify(); break;
     case '$CreateSafe': op_createSafe(); break;
