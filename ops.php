@@ -102,7 +102,6 @@ function op_updCodesSafe () {
     sleep(3);
     return;
   }
-  $safe['pseudo'] = $safeNew['pseudo'];
   $safe['hp0'] = $safeNew['hp0'];
   $safe['hr0'] = $safeNew['hr0'];
   $safe['hhp1'] = $safeNew['hhp1'];
@@ -209,6 +208,8 @@ function op_trustDevice () {
   $td = $args['trustDev'];
   $safe = opGetSafe($td);
   if (!isset($safe)) return;
+
+  $safe['pseudo'] = $td['pseudo'];
 
   $d = [
     'devName' => $td['devName'],
